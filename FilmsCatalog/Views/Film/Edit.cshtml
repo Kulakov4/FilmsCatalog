@@ -1,0 +1,62 @@
+﻿@model EditFilmViewModel
+@{ ViewData["Title"] = "Редактирование фильма"; }
+
+
+@if (Model.Id > 0)
+{
+<h2>Редактирование фильма</h2> }
+else
+{
+<h2>Добавление фильма</h2>}
+
+
+<form asp-controller="Film" asp-action="Edit" method="post" style="margin-top: 2em;" enctype="multipart/form-data">
+    <div class="form-row">
+        <div class="form-group col-12">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" class="form-control">
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-12">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" class="form-control" text-wrap:normal" type="text"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-2">
+            <label asp-for="Year"></label>
+            <input asp-for="Year" class="form-control">
+            <span asp-validation-for="Year" class="text-danger"></span>
+        </div>
+        <div class="form-group col">
+            <label asp-for="Director"></label>
+            <input asp-for="Director" class="form-control">
+            <span asp-validation-for="Director" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div>
+    <input asp-for="ReturnUrl" type="hidden">
+    </div>
+
+
+    <div class="form-row">
+        <div class="form-group col-md-4 col-sm-6 col-12">
+            <label asp-for="PosterFile"></label>
+            @if (Model.Poster != null)
+            {<img style='width:300px; height:300px;' src="data:image/jpeg;base64,@(Convert.ToBase64String(Model.Poster))" class="form-control" />}
+            <input asp-for="PosterFile" class="form-control" />
+            <span asp-validation-for="PosterFile" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <button type="submit" class="btn btn-outline-primary">Сохранить</button>
+        <a href="@Model.ReturnUrl" class="btn btn-outline-secondary">Отмена</a>
+
+    </div>
+</form>

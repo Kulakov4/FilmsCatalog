@@ -1,0 +1,70 @@
+﻿@model FilmListViewModel
+@addTagHelper *, FilmsCatalog
+@{ ViewData["Title"] = "Список фильмов"; }
+
+<style>
+    @@font-face {
+        font-family: 'FontAwesome';
+        src: url('https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/fonts/fontawesome-webfont.woff2') format('woff2'), url('https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/fonts/fontawesome-webfont.woff') format('woff'), url('https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/fonts/fontawesome-webfont.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal
+    }
+
+    .glyphicon {
+        display: inline-block;
+        font: normal normal normal 14px/1 FontAwesome;
+        font-size: inherit;
+        text-rendering: auto;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale
+    }
+
+    .glyphicon-chevron-right:before {
+        content: "\f054";
+    }
+
+    .glyphicon-chevron-left:before {
+        content: "\f053";
+    }
+</style>
+
+<table class="table">
+    <tr>
+        <th>
+            Название фильма
+        </th>
+        <th>
+            Режиссёр
+        </th>
+        <th>
+            Год выпуска
+        </th>
+    </tr>
+    @foreach (Film f in Model.Films)
+    {
+<tr>
+    <td>
+        <a asp-action="Info" asp-route-id="@f.Id" asp-route-page="@Model.PageViewModel.PageNumber">@f.Name</a>
+    </td>
+    <td>
+        <a asp-action="Info" asp-route-id="@f.Id" asp-route-page="@Model.PageViewModel.PageNumber">@f.Director</a>
+    </td>
+    <td>
+        <a asp-action="Info" asp-route-id="@f.Id" asp-route-page="@Model.PageViewModel.PageNumber">@f.Year</a>
+    </td>
+</tr>
+}
+</table>
+
+<div class="row">
+    <div class="col-2">
+        <a asp-action="Create"
+           asp-route-page="@Model.PageViewModel.PageNumber"
+           class="btn  btn-outline-secondary">
+            Добавить фильм
+        </a>
+    </div>
+    <div class="col">
+        <page-link page-model="@Model.PageViewModel" page-action="List"></page-link>
+    </div>
+</div>

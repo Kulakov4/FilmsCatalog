@@ -6,8 +6,10 @@ using FilmsCatalog.ViewModels;
 using FilmsCatalog.ViewModels.Film;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -31,9 +33,9 @@ namespace FilmsCatalog.Controllers
             this.userManager = userManager;
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("{controller}/Delete/{filmId}")]
-        public async Task<IActionResult> Delete(int filmId, int page = 1)
+        public async Task<IActionResult> Del(int filmId, int page = 1)
         {
             if (filmId <= 0)
                 return BadRequest();
@@ -51,7 +53,6 @@ namespace FilmsCatalog.Controllers
 
             return await List(page);
         }
-
 
         [HttpGet]
         [Route("{controller}/Info/{filmId}")]
@@ -81,7 +82,7 @@ namespace FilmsCatalog.Controllers
             var count = await allFilms.CountAsync();
             var pageViewModel = new PageViewModel(count, page, pageSize);
             var viewModel = new FilmListViewModel { Films = items, PageViewModel = pageViewModel };
-            return View("List", viewModel);
+            return View(nameof(List), viewModel);
         }
 
         [HttpGet]
@@ -98,7 +99,8 @@ namespace FilmsCatalog.Controllers
             int i = 0;
             foreach (var film in allFilms)
             {
-                if (++i > pageSize) {
+                if (++i > pageSize)
+                {
                     page++;
                     i = 1;
                 }
@@ -136,7 +138,7 @@ namespace FilmsCatalog.Controllers
 
             var viewModel = new EditFilmViewModel();
             viewModel.CopyProperties(film);
-            viewModel.ReturnUrl = Url.Action("Info", new { iD = filmId });
+            viewModel.ReturnUrl = Url.Action(nameof(Info), new { Id = filmId });
 
             return View(viewModel);
         }
@@ -144,7 +146,32 @@ namespace FilmsCatalog.Controllers
         [HttpGet]
         public IActionResult Create(int page = 1)  // Добавление нового фильма
         {
-            return View("Edit", new EditFilmViewModel() { ReturnUrl = @$"\Film\List?page={page}" } );
+            var p = page;
+            return View(nameof(Edit), new EditFilmViewModel() { ReturnUrl = Url.Action(nameof(List), new { page = p }) });
+        }
+
+        private byte[] ReadPoster(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return null;
+
+            var imgService = new ImageService<PosterImageProfile>();
+            try
+            {
+                imgService.ValidateImage(file);
+
+                // считываем переданный файл в массив байтов
+                using (var binaryReader = new BinaryReader(file.OpenReadStream()))
+                {
+                    return binaryReader.ReadBytes((int)file.Length);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("PosterFile", ex.Message);
+            }
+            return null;
         }
 
         [HttpPost]
@@ -154,32 +181,21 @@ namespace FilmsCatalog.Controllers
             if (model == null)
                 return BadRequest();
 
-            byte[] imageData = null;
+            var film = (model.Id > 0) ? await filmService.Get(model.Id) : new Film();
 
-            if (model.PosterFile != null && model.PosterFile.Length > 0)
-            {
-                var imgService = new ImageService<PosterImageProfile>();
-                try
-                {
-                    imgService.ValidateImage(model.PosterFile);
+            // Если в БД фильма с таким идентификатором уже нет
+            if (model.Id > 0 && film == null)
+                return NotFound();
 
-                    // считываем переданный файл в массив байтов
-                    using (var binaryReader = new BinaryReader(model.PosterFile.OpenReadStream()))
-                    {
-                        imageData = binaryReader.ReadBytes((int)model.PosterFile.Length);
-                    }
+            var userId = userManager.GetUserId(User);
+            // Если редактирует не тот пользователь, который создавал
+            if (model.Id > 0 && userId != film.UserId)
+                return BadRequest();
 
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("PosterFile", ex.Message);
-                }
-            }
+            byte[] imageData = ReadPoster(model.PosterFile);
 
             if (model.Year < 1900 || model.Year > DateTime.Now.Year)
                 ModelState.AddModelError("Year", "Некорректный год");
-
-            var film = (model.Id > 0) ? await filmService.Get(model.Id) : new Film();
 
             if (!ModelState.IsValid)
             {
@@ -190,7 +206,6 @@ namespace FilmsCatalog.Controllers
                 return View(viewModel);
             }
 
-            var userId = userManager.GetUserId(User);
             film.CopyProperties(model);
             film.UserId = userId;
             if (imageData != null)
@@ -203,11 +218,11 @@ namespace FilmsCatalog.Controllers
             }
 
             await filmService.Save();  // тут в newFilm.Id записывается новый идентификатор
-            
+
             if (newFilm.Id == 0)
                 return BadRequest();
 
-            return RedirectToAction($"Info", new { filmId = newFilm.Id });
+            return RedirectToAction(nameof(Info), new { filmId = newFilm.Id });
         }
     }
 }

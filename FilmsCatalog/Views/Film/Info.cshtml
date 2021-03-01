@@ -40,37 +40,36 @@
 
     @if (Model.Poster != null)
     {
-<div class="row">
-    <div class="col">
-        <label asp-for="Poster"></label>
-    </div>
-    <div class="col-10">
-        <img src="data:image/jpeg;base64,@(Convert.ToBase64String(Model.Poster))" class="img-fluid" />
-    </div>
-</div>}
+        <div class="row">
+            <div class="col">
+                <label asp-for="Poster"></label>
+            </div>
+            <div class="col-10">
+                <img src="data:image/jpeg;base64,@(Convert.ToBase64String(Model.Poster))" class="img-fluid" />
+            </div>
+        </div>}
     <div class="row">
         <div class="col">
             <p></p>
         </div>
     </div>
-    <div class="form-group">
-        <a asp-action="List" asp-route-id="@Model.Id"
-           class="btn btn-outline-primary">
-            Назад
-        </a>
+    <form asp-controller="Film" asp-action="Delete" asp-route-id="@Model.Id" asp-route-page="@Model.Page" method="post">
+        <div class="form-group">
+            <a asp-action="List" asp-route-id="@Model.Id"
+               class="btn btn-outline-primary">
+                Назад
+            </a>
 
-        @if (!Model.ReadOnly)
-        {
-    <a asp-action="Edit" asp-route-id="@Model.Id"
-       class="btn btn-outline-secondary">
-        Редактировать
-    </a>
-
-    <a asp-action="Delete" asp-route-id="@Model.Id" asp-route-page="@Model.Page"
-        class="btn btn-outline-danger">
-        Удалить
-    </a>}
-    </div>
+            @if (!Model.ReadOnly)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id"
+                   class="btn btn-outline-secondary">
+                    Редактировать
+                </a>
+                <button class="btn btn-outline-danger" type="submit">Удалить</button>
+            }
+        </div>
+    </form>
 </div>
 
 

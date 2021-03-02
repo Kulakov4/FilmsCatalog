@@ -35,7 +35,7 @@ namespace FilmsCatalog.Controllers
 
         [HttpPost]
         [Route("{controller}/Delete/{filmId}")]
-        public async Task<IActionResult> Del(int filmId, int page = 1)
+        public async Task<IActionResult> Delete(int filmId, int page = 1)
         {
             if (filmId <= 0)
                 return BadRequest();
@@ -76,11 +76,12 @@ namespace FilmsCatalog.Controllers
             return View(viewModel);
         }
 
-        private async Task<IActionResult> Page(IQueryable<Film> allFilms, int page, int pageSize)
+        private async Task<IActionResult> Page(int page, int pageSize, int count = -1)
         {
-            var items = await allFilms.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-            var count = await allFilms.CountAsync();
-            var pageViewModel = new PageViewModel(count, page, pageSize);
+            // Количество всех фильмов
+            var allFilmsCount = (count < 0) ? await filmService.GetAll().CountAsync() : count;
+            var items = await filmService.GetAll().OrderBy(f=>f.Name).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            var pageViewModel = new PageViewModel(allFilmsCount, page, pageSize);
             var viewModel = new FilmListViewModel { Films = items, PageViewModel = pageViewModel };
             return View(nameof(List), viewModel);
         }
@@ -92,36 +93,26 @@ namespace FilmsCatalog.Controllers
             if (filmId <= 0)
                 return BadRequest();
 
-            int page = 1;
-            var allFilms = filmService.GetAll().OrderBy(f => f.Name);
+            var ourFilm = await filmService.Get(filmId);
 
-            bool ok = false;
-            int i = 0;
-            foreach (var film in allFilms)
-            {
-                if (++i > pageSize)
-                {
-                    page++;
-                    i = 1;
-                }
-                if (film.Id == filmId)
-                {
-                    ok = true;
-                    break;
-                }
-            }
+            // Фильма нет в БД
+            if (ourFilm == null)
+                return RedirectToAction(nameof(List));
 
-            if (!ok)
-                page = 1;
+            // Количество всех фильмов
+            var allFilmsCount = await filmService.GetAll().CountAsync();
+            // Количество фильмов до нашего фильма 
+            var skipFilmsCount = await filmService.GetAll().OrderBy(f=>f.Name).Where(f => f.Name.CompareTo(ourFilm.Name) < 0).CountAsync();
 
-            return await Page(allFilms, page, pageSize);
+            var page = (skipFilmsCount / pageSize) + 1;
+                
+            return await Page(page, pageSize, allFilmsCount);
         }
 
         [HttpGet]
         public async Task<IActionResult> List(int page = 1)  // список всех фильмов
         {
-            var allFilms = filmService.GetAll().OrderBy(f => f.Name);
-            return await Page(allFilms, page, pageSize);
+            return await Page(page, pageSize);
         }
 
         [HttpGet]
@@ -205,24 +196,31 @@ namespace FilmsCatalog.Controllers
                     viewModel.Poster = film.Poster;
                 return View(viewModel);
             }
-
-            film.CopyProperties(model);
-            film.UserId = userId;
-            if (imageData != null)
-                film.Poster = imageData;
-
-            var newFilm = film;
-            if (model.Id == 0)
+            try
             {
-                newFilm = await filmService.Insert(film);
+
+                film.CopyProperties(model);
+                film.UserId = userId;
+                if (imageData != null)
+                    film.Poster = imageData;
+
+                var newFilm = film;
+                if (model.Id == 0)
+                {
+                    newFilm = await filmService.Insert(film);
+                }
+
+                await filmService.Save();  // тут в newFilm.Id записывается новый идентификатор
+
+                if (newFilm.Id == 0)
+                    return BadRequest();
+
+                return RedirectToAction(nameof(Info), new { filmId = newFilm.Id });
             }
-
-            await filmService.Save();  // тут в newFilm.Id записывается новый идентификатор
-
-            if (newFilm.Id == 0)
-                return BadRequest();
-
-            return RedirectToAction(nameof(Info), new { filmId = newFilm.Id });
+            catch 
+            {
+                return StatusCode(500);
+            }
         }
     }
 }

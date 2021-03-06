@@ -32,12 +32,6 @@ namespace FilmsCatalog
         {
             string connectionString = Configuration.GetConnectionString("DefaultConnection");
 
-            /*
-            Метод AddDbContext() настраивает службы, предоставляемые инфраструктурой Entity Framework Core для класса контекста базы ApplicationDbContext. 
-            Аргументом метода AddDbContext () является лямбда-выражение, которое получает объект options, конфигурирующий базу данных для класса контекста. 
-            В этом случае база данных конфигурируется с помощью метода UseSqlServer() и указания строки подключения.             
-             */
-
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
             services.AddIdentity<User, IdentityRole>()
@@ -46,16 +40,6 @@ namespace FilmsCatalog
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddControllersWithViews();
             services.AddRazorPages();
-
-            /*
-            Transient подразумевает, что сервис создается каждый раз, когда его запрашивают. 
-            Этот жизненный цикл лучше всего подходит для легковесных, не фиксирующих состояние, сервисов.             
-
-             Scoped сервис создаются единожды для каждого запроса.
-
-            Singleton - сервис создается при первом запросе (или при запуске ConfigureServices, если вы указываете инстанс там), 
-            а затем каждый последующий запрос будет использовать этот же инстанс.
-            */
 
             services.AddTransient<IImageProfile, PosterImageProfile>();
 

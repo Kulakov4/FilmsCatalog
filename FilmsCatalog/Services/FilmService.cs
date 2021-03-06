@@ -12,11 +12,5 @@ namespace FilmsCatalog.Services
     {
         public FilmService(ApplicationDbContext DbContext) : base(DbContext) {
         }
-
-        public async void Test()
-        {
-            var f = new Film();
-            var result = await Insert(f);
-        }
     }
 }
